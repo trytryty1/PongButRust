@@ -4,7 +4,6 @@
 // Author: David Wing
 // Date: 11/2/2022
 
-use std::os::raw::c_float;
 // Next we need to actually `use` the pieces of ggez that we are going
 // to need frequently.
 use ggez::{
@@ -12,21 +11,14 @@ use ggez::{
     input::keyboard::{KeyCode, KeyInput},
     Context, GameResult,
 };
-use ggez::graphics::{Drawable, Rect};
 
-use std::env;
-use std::path;
-use std::ptr::null;
-use std::time::Duration;
 use ggez::audio;
 use ggez::audio::{SoundSource, Source};
-use ggez::filesystem::resources_dir;
+use std::env;
+use std::path;
 
 // Size of the screen and the game
-const SCREEN_SIZE: (f32, f32) = (
-    600.0,
-    400.0,
-);
+const SCREEN_SIZE: (f32, f32) = (600.0, 400.0);
 
 // Starting positions for the players
 const PLAYER1_X: f32 = 50.0;
@@ -36,7 +28,7 @@ struct Rectangle {
     x: f32,
     y: f32,
     width: f32,
-    height: f32
+    height: f32,
 }
 
 impl Rectangle {
@@ -45,7 +37,7 @@ impl Rectangle {
             x,
             y,
             width,
-            height
+            height,
         }
     }
 
@@ -57,25 +49,27 @@ impl Rectangle {
 
     // Returns the center of the rectangle as a tuple
     fn get_center(&self) -> (f32, f32) {
-        return (self.x + self.width/2.0, self.y + self.height/2.0);
+        return (self.x + self.width / 2.0, self.y + self.height / 2.0);
     }
 
     // Checks if the rectangle collides with another rectangle
     fn collides(&self, rect: &Rectangle) -> bool {
-        self.x + self.width >= rect.x && self.y >= rect.y && self.x <= rect.x + rect.width && self.y <= rect.y + rect.height
+        self.x + self.width >= rect.x
+            && self.y >= rect.y
+            && self.x <= rect.x + rect.width
+            && self.y <= rect.y + rect.height
     }
-
 }
 
 // Draws a rectangle at the coords and dimensions of the rectangle
 impl Draw for Rectangle {
     fn draw(&self, canvas: &mut graphics::Canvas) {
-        let rect = graphics::Rect::new(self.x,self.y,self.width,self.height);
+        let rect = graphics::Rect::new(self.x, self.y, self.width, self.height);
         canvas.draw(
             &graphics::Quad,
             graphics::DrawParam::new()
                 .dest_rect(rect)
-                .color([1.0,1.0,1.0,1.0])
+                .color([1.0, 1.0, 1.0, 1.0]),
         );
     }
 }
@@ -109,7 +103,7 @@ impl PhysicsBody {
         PhysicsBody {
             vx: 0.0,
             vy: 0.0,
-            edge_behavior: EdgeBehavior::CONSTRAIN
+            edge_behavior: EdgeBehavior::CONSTRAIN,
         }
     }
 
@@ -198,7 +192,7 @@ impl Paddle {
     const WIDTH: f32 = 16.0;
     const HEIGHT: f32 = 64.0;
     const SPEED: f32 = 5.0;
-    pub fn new(x: f32, y:f32) -> Paddle {
+    pub fn new(x: f32, y: f32) -> Paddle {
         let rectangle = Rectangle::new(x, y, Paddle::WIDTH, Paddle::HEIGHT);
         let mut physics = PhysicsBody::new();
         physics.edge_behavior = EdgeBehavior::CONSTRAIN;
@@ -232,14 +226,13 @@ impl Paddle {
 
     // Sets the velocity to move towards the indicated position
     fn move_towards(&mut self, x: f32, y: f32) {
-        if self.rectangle.y + self.rectangle.height/2.0 > y {
+        if self.rectangle.y + self.rectangle.height / 2.0 > y {
             self.move_up();
         }
-        if self.rectangle.y + self.rectangle.height/2.0 < y {
+        if self.rectangle.y + self.rectangle.height / 2.0 < y {
             self.move_down();
         }
     }
-
 }
 
 struct Ball {
@@ -252,7 +245,7 @@ impl Ball {
     const WIDTH: f32 = 16.0;
     const HEIGHT: f32 = 16.0;
     const SPEED: f32 = 3.0;
-    pub fn new(x: f32, y:f32) -> Ball {
+    pub fn new(x: f32, y: f32) -> Ball {
         let rectangle = Rectangle::new(x, y, Ball::WIDTH, Ball::HEIGHT);
         let mut physics = PhysicsBody::new();
         physics.edge_behavior = EdgeBehavior::VERTICAL_BOUNCE;
@@ -293,7 +286,6 @@ impl Ball {
             self.physics.vx = self.speed;
         }
     }
-
 }
 
 struct MainState {
@@ -319,9 +311,9 @@ enum GameState {
 
 impl MainState {
     pub fn new(ctx: &mut Context) -> Self {
-        let paddle1 = Paddle::new(PLAYER1_X,SCREEN_SIZE.1/2.0);
-        let paddle2 = Paddle::new(PLAYER2_X,SCREEN_SIZE.1/2.0);
-        let ball = Ball::new(SCREEN_SIZE.0/2.0,SCREEN_SIZE.1/2.0);
+        let paddle1 = Paddle::new(PLAYER1_X, SCREEN_SIZE.1 / 2.0);
+        let paddle2 = Paddle::new(PLAYER2_X, SCREEN_SIZE.1 / 2.0);
+        let ball = Ball::new(SCREEN_SIZE.0 / 2.0, SCREEN_SIZE.1 / 2.0);
 
         // ********* Load Resources *************
         let paddle_hit_sound = match audio::Source::new(ctx, "/sounds/ping_pong_8bit_beeep.ogg") {
@@ -331,7 +323,8 @@ impl MainState {
                 panic!();
             }
         };
-        let player_lose_sound = match audio::Source::new(ctx, "/sounds/ping_pong_8bit_peeeeeep.ogg") {
+        let player_lose_sound = match audio::Source::new(ctx, "/sounds/ping_pong_8bit_peeeeeep.ogg")
+        {
             GameResult::Ok(t) => t,
             GameResult::Err(e) => {
                 println!("{}", e.to_string());
@@ -346,22 +339,24 @@ impl MainState {
             }
         };
 
-
-
         MainState {
             paddle1,
             paddle2,
             ball,
-            score: 0.0, display_score: 0.0,
-            paddle_hit_sound, player_lose_sound, third_sound,
-            game_state: GameState::WAIT_FOR_START, time: 0}
+            score: 0.0,
+            display_score: 0.0,
+            paddle_hit_sound,
+            player_lose_sound,
+            third_sound,
+            game_state: GameState::WAIT_FOR_START,
+            time: 0,
+        }
     }
-
 
     // Resets the game back to default
     fn reset(&mut self) {
-        self.ball.rectangle.x = SCREEN_SIZE.0/2.0;
-        self.ball.rectangle.y = SCREEN_SIZE.1/2.0;
+        self.ball.rectangle.x = SCREEN_SIZE.0 / 2.0;
+        self.ball.rectangle.y = SCREEN_SIZE.1 / 2.0;
         self.ball.reset_speed();
         self.score = 0.0;
     }
@@ -369,39 +364,52 @@ impl MainState {
 
 impl event::EventHandler for MainState {
     fn update(&mut self, ctx: &mut Context) -> GameResult<()> {
-        self.time = (self.time+1)%600;
+        self.time = (self.time + 1) % 600;
         match self.game_state {
             GameState::WAIT_FOR_START => {
                 self.paddle1.update();
                 self.paddle2.update();
                 // Paddles moves up and down like a sin wave
-                self.paddle2.move_towards(0.0, f32::sin((self.time as f32/10.0)/ 3.14)*100.0 + SCREEN_SIZE.1/2.0);
+                self.paddle2.move_towards(
+                    0.0,
+                    f32::sin((self.time as f32 / 10.0) / 3.14) * 100.0 + SCREEN_SIZE.1 / 2.0,
+                );
             }
             GameState::PLAY => {
                 // Check if player has lost
                 if self.ball.rectangle.x <= 0.0 - self.ball.rectangle.width {
                     // Player loses
                     self.game_state = GameState::LOSE;
-                    self.player_lose_sound.play(ctx).expect("TODO: panic message");
+                    self.player_lose_sound
+                        .play(ctx)
+                        .expect("TODO: panic message");
                 }
 
                 // Check if the ai has lost
                 if self.ball.rectangle.x >= SCREEN_SIZE.0 {
                     self.game_state = GameState::WIN;
-                    self.player_lose_sound.play(ctx).expect("TODO: panic message");
+                    self.player_lose_sound
+                        .play(ctx)
+                        .expect("TODO: panic message");
                 }
 
                 // Check if the ball hits the players paddle
-                if self.ball.rectangle.collides(&self.paddle1.rectangle) || self.ball.rectangle.collides(&self.paddle2.rectangle) {
+                if self.ball.rectangle.collides(&self.paddle1.rectangle)
+                    || self.ball.rectangle.collides(&self.paddle2.rectangle)
+                {
                     self.ball.flip_direction_x();
                     self.score += 1000.0;
-                    self.paddle_hit_sound.play(ctx).expect("TODO: panic message");
+                    self.paddle_hit_sound
+                        .play(ctx)
+                        .expect("TODO: panic message");
                 }
 
                 // Check if the ball hits the ai paddle
                 if self.ball.rectangle.collides((&self.paddle2.rectangle)) {
                     self.ball.flip_direction_x();
-                    self.paddle_hit_sound.play(ctx).expect("TODO: panic message");
+                    self.paddle_hit_sound
+                        .play(ctx)
+                        .expect("TODO: panic message");
                 }
 
                 // Update the ai paddle
@@ -413,21 +421,24 @@ impl event::EventHandler for MainState {
                 self.paddle1.update();
                 self.paddle2.update();
                 self.ball.update();
-
             }
             GameState::LOSE => {
                 self.paddle1.update();
                 self.paddle2.update();
-                let ctime:f32 = self.time as f32/10.0/ 3.14;
+                let ctime: f32 = self.time as f32 / 10.0 / 3.14;
                 // AI paddle does a victory dance the only way algorithms know how
-                self.paddle2.move_towards(0.0, f32::sin(ctime + f32::sin(7.0 * ctime))*(SCREEN_SIZE.1-100.0) + SCREEN_SIZE.1/2.0);
+                self.paddle2.move_towards(
+                    0.0,
+                    f32::sin(ctime + f32::sin(7.0 * ctime)) * (SCREEN_SIZE.1 - 100.0)
+                        + SCREEN_SIZE.1 / 2.0,
+                );
             }
             GameState::WIN => {
                 self.paddle1.update();
                 self.paddle2.update();
-                let ctime:f32 = self.time as f32/10.0/ 3.14;
+                let ctime: f32 = self.time as f32 / 10.0 / 3.14;
                 // The paddle goes to its default position out of embarrassment
-                self.paddle2.move_towards(0.0, SCREEN_SIZE.1/2.0);
+                self.paddle2.move_towards(0.0, SCREEN_SIZE.1 / 2.0);
             }
         }
         Ok(())
@@ -442,9 +453,9 @@ impl event::EventHandler for MainState {
         self.ball.rectangle.draw(&mut canvas);
 
         // Draw the score
-        self.display_score += (self.score-self.display_score)*0.05;
+        self.display_score += (self.score - self.display_score) * 0.05;
         let scoreboard_text =
-            graphics::Text::new(format!("Score: {}", f32::ceil( self.display_score ) as i32));
+            graphics::Text::new(format!("Score: {}", f32::ceil(self.display_score) as i32));
         let coords = [SCREEN_SIZE.0 / 2.0 - 50.0 / 2.0, 10.0];
         let params = graphics::DrawParam::default().dest(coords);
         graphics::draw(&mut canvas, &scoreboard_text, params);
@@ -452,27 +463,38 @@ impl event::EventHandler for MainState {
         // Draws additional text based on the game state
         match self.game_state {
             GameState::WAIT_FOR_START => {
-                let scoreboard_text =
-                    graphics::Text::new(format!("Press Space to start!"));
-                let coords = [SCREEN_SIZE.0 / 2.0 - 150.0 / 2.0, SCREEN_SIZE.1 / 2.0 + 100.0];
+                let scoreboard_text = graphics::Text::new(format!("Press Space to start!"));
+                let coords = [
+                    SCREEN_SIZE.0 / 2.0 - 150.0 / 2.0,
+                    SCREEN_SIZE.1 / 2.0 + 100.0,
+                ];
                 let params = graphics::DrawParam::default().dest(coords);
                 graphics::draw(&mut canvas, &scoreboard_text, params);
             }
             GameState::PLAY => {}
             GameState::LOSE => {
-                let scoreboard_text =
-                    graphics::Text::new(format!("        You lose!\nPress Space to reset the game."));
-                let coords = [SCREEN_SIZE.0 / 2.0 - 200.0 / 2.0, SCREEN_SIZE.1 / 2.0 + 100.0];
+                let scoreboard_text = graphics::Text::new(format!(
+                    "        You lose!\nPress Space to reset the game."
+                ));
+                let coords = [
+                    SCREEN_SIZE.0 / 2.0 - 200.0 / 2.0,
+                    SCREEN_SIZE.1 / 2.0 + 100.0,
+                ];
                 let params = graphics::DrawParam::default().dest(coords);
                 graphics::draw(&mut canvas, &scoreboard_text, params);
             }
-            GameState::WIN => {let scoreboard_text =
-                graphics::Text::new(format!("        You win!\nPress Space to reset the game."));
-                let coords = [SCREEN_SIZE.0 / 2.0 - 200.0 / 2.0, SCREEN_SIZE.1 / 2.0 + 100.0];
+            GameState::WIN => {
+                let scoreboard_text = graphics::Text::new(format!(
+                    "        You win!\nPress Space to reset the game."
+                ));
+                let coords = [
+                    SCREEN_SIZE.0 / 2.0 - 200.0 / 2.0,
+                    SCREEN_SIZE.1 / 2.0 + 100.0,
+                ];
                 let params = graphics::DrawParam::default().dest(coords);
-                graphics::draw(&mut canvas, &scoreboard_text, params);}
+                graphics::draw(&mut canvas, &scoreboard_text, params);
+            }
         }
-
 
         canvas.finish(ctx).expect("TODO: panic message");
         Ok(())
@@ -508,7 +530,7 @@ impl event::EventHandler for MainState {
                     }
                 }
             }
-            _ => ()
+            _ => (),
         }
         Ok(())
     }
@@ -521,9 +543,8 @@ impl event::EventHandler for MainState {
             }
             Some(KeyCode::Down) => {
                 self.paddle1.stop_moving();
-
             }
-            _ => ()
+            _ => (),
         }
         Ok(())
     }
